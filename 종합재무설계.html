@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고객 종합재무설계 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 350px; }
+        }
+        .tab-active { border-bottom: 3px solid #1e3a8a; color: #1e3a8a; font-weight: 700; }
+        .tab-inactive { color: #6b7280; }
+        .tab-inactive:hover { color: #374151; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 antialiased selection:bg-blue-100 selection:text-blue-900">
+
+    <!-- Top Navigation / Header (Client Selector) -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div class="mb-2 sm:mb-0">
+                <h1 class="text-xl font-bold text-slate-800">나를 지키고, 내 자산을 지키는 설계</h1>
+                <p id="client-profile-summary" class="text-xs text-slate-500"></p>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <label for="client-selector" class="text-sm font-medium text-slate-700 whitespace-nowrap">고객</label>
+                <select id="client-selector" onchange="switchClient(this.value)" class="p-2 border border-stone-300 rounded-lg text-sm bg-stone-50 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="client1">이승현</option>
+                    <option value="client2">김민정</option>
+                </select>
+                <span id="client-strategy" class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded hidden sm:block"></span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8 space-y-8">
+
+        <!-- Main Interactive Dashboard -->
+        <section id="dashboard" class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <!-- Tabs Navigation -->
+            <div class="flex border-b border-stone-200 overflow-x-auto">
+                <button onclick="switchTab('profile')" id="tab-profile" class="flex-1 py-4 px-3 text-sm sm:text-base text-center transition-colors tab-active whitespace-nowrap">
+                    👤 고객 정보
+                </button>
+                <button onclick="switchTab('overview')" id="tab-overview" class="flex-1 py-4 px-3 text-sm sm:text-base text-center transition-colors tab-inactive whitespace-nowrap">
+                    📊 자금 배분
+                </button>
+                <button onclick="switchTab('short')" id="tab-short" class="flex-1 py-4 px-3 text-sm sm:text-base text-center transition-colors tab-inactive whitespace-nowrap">
+                    🌱 단기
+                </button>
+                <button onclick="switchTab('mid')" id="tab-mid" class="flex-1 py-4 px-3 text-sm sm:text-base text-center transition-colors tab-inactive whitespace-nowrap">
+                    🏠 중기
+                </button>
+                <button onclick="switchTab('long')" id="tab-long" class="flex-1 py-4 px-3 text-sm sm:text-base text-center transition-colors tab-inactive whitespace-nowrap">
+                    🛡️ 장기
+                </button>
+                <button onclick="switchTab('checklist')" id="tab-checklist" class="flex-1 py-4 px-3 text-sm sm:text-base text-center transition-colors tab-inactive whitespace-nowrap">
+                    ✅ 실천사항
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="p-6 min-h-[500px]">
+                
+                <!-- VIEW 1: Client Profile & Philosophy -->
+                <div id="view-profile" class="space-y-8">
+                    
+                    <!-- Combined Header Section -->
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-stone-200 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        <!-- Left Column: Client Name & Quick Details -->
+                        <div class="lg:col-span-1 border-b lg:border-b-0 lg:border-r border-stone-200 pb-4 lg:pb-0 lg:pr-6">
+                            <h2 id="client-name-title" class="text-3xl font-extrabold text-blue-900 mb-4 text-center lg:text-left"></h2>
+                            
+                            <!-- Quick Detail Cards -->
+                            <div class="grid grid-cols-3 gap-2 text-center text-sm">
+                                <div class="p-2 rounded-lg bg-stone-50 border border-stone-100">
+                                    <p class="text-xs text-stone-500">나이</p>
+                                    <strong id="client-age" class="text-sm font-bold text-stone-800"></strong>
+                                </div>
+                                <div class="p-2 rounded-lg bg-stone-50 border border-stone-100">
+                                    <p class="text-xs text-stone-500">결혼 여부</p>
+                                    <strong id="client-marital-status" class="text-sm font-bold text-stone-800"></strong>
+                                </div>
+                                <div class="p-2 rounded-lg bg-stone-50 border border-stone-100">
+                                    <p class="text-xs text-stone-500">가구/자녀</p>
+                                    <strong id="client-children" class="text-sm font-bold text-stone-800"></strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Core Philosophy -->
+                        <div class="lg:col-span-2 lg:pl-6 border-l-4 border-blue-900 pl-4">
+                            <h3 class="text-xl font-bold mb-3 text-slate-800">설계 핵심 철학</h3>
+                            <p id="philosophy-text" class="text-slate-600 leading-relaxed text-sm">
+                                <!-- Content will be updated by JS -->
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Financial Summary and Priorities -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        <div class="lg:col-span-1 bg-stone-100 p-6 rounded-xl">
+                            <h3 class="font-bold text-stone-700 mb-3 text-lg">💰 재무 현황 요약</h3>
+                            <ul class="text-sm text-stone-600 space-y-2">
+                                <li>• 월 소득: <span id="client-income" class="font-semibold text-stone-900"></span></li>
+                                <li>• 월 저축여력: <span id="client-savings" class="font-semibold text-stone-900"></span></li>
+                                <li>• 투자성향: <span id="client-style" class="font-semibold text-stone-900"></span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border-l-4 border-amber-600">
+                            <h3 class="font-bold text-stone-700 mb-3 text-lg">🎯 우선순위 (Focus Area)</h3>
+                            <ol id="client-priority-list" class="text-base text-stone-600 space-y-2 list-decimal list-inside ml-4">
+                                <!-- Content will be updated by JS -->
+                            </ol>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- VIEW 2: Overview (Allocation) -->
+                <div id="view-overview" class="hidden space-y-6">
+                    <div class="text-center max-w-2xl mx-auto mb-8">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">저축여력의 기간별 배분 전략</h3>
+                        <p id="allocation-intro-text" class="text-slate-600">
+                            <!-- Content will be updated by JS -->
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                        <div class="chart-container">
+                            <canvas id="allocationChart"></canvas>
+                        </div>
+                        <div id="allocation-details" class="space-y-4">
+                            <!-- Content will be updated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 3: Short Term -->
+                <div id="view-short" class="hidden space-y-6">
+                    <div id="short-header" class="border-l-4 border-amber-500 pl-4 mb-6">
+                        <!-- Content will be updated by JS -->
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-stone-50 p-6 rounded-xl border border-stone-200">
+                            <h4 class="font-bold text-stone-700 mb-4 flex items-center">
+                                <span class="text-2xl mr-2">🚨</span> 비상자금 현황
+                            </h4>
+                            <div id="emergency-status" class="mb-2 flex justify-between text-sm font-semibold">
+                                <!-- Content will be updated by JS -->
+                            </div>
+                            <div id="emergency-progress-bar" class="w-full bg-stone-200 rounded-full h-6 mb-4 relative overflow-hidden">
+                                <!-- Content will be updated by JS -->
+                            </div>
+                            <p id="emergency-detail" class="text-sm text-stone-600">
+                                <!-- Content will be updated by JS -->
+                            </p>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl border border-dashed border-stone-300 flex flex-col justify-center items-center text-center">
+                            <div class="text-4xl mb-3">🔒</div>
+                            <h4 class="font-bold text-stone-700">단기 실천 포인트</h4>
+                            <p id="short-term-action" class="text-sm text-stone-500 mt-2">
+                                <!-- Content will be updated by JS -->
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 4: Mid Term -->
+                <div id="view-mid" class="hidden space-y-6">
+                    <div id="mid-header" class="border-l-4 border-blue-600 pl-4 mb-6">
+                        <!-- Content will be updated by JS -->
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                        <div class="lg:col-span-1">
+                            <div class="bg-white p-4 rounded-lg border border-stone-100 shadow-sm">
+                                <h4 id="housing-chart-title" class="text-sm font-bold text-stone-500 mb-4 uppercase tracking-wide">
+                                    <!-- Content will be updated by JS -->
+                                </h4>
+                                <!-- Reduced chart size -->
+                                <div class="chart-container" style="height: 280px; max-width: 100%;">
+                                    <canvas id="midChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="mid-strategy-details" class="lg:col-span-1 space-y-4">
+                            <!-- Content will be updated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 5: Long Term (Parallel Layout) -->
+                <div id="view-long" class="hidden space-y-6">
+                    <div id="long-header" class="border-l-4 border-emerald-600 pl-4 mb-6">
+                        <!-- Content will be updated by JS -->
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                        
+                        <!-- Left Column: Risk Management -->
+                        <div class="bg-stone-50 rounded-xl p-6 h-full border border-stone-200">
+                            <h4 class="font-bold text-lg text-stone-800 mb-4 flex items-center">
+                                🛡️ 위험 관리 설계 (보험)
+                                <span class="ml-2 text-xs bg-white border border-stone-200 text-stone-600 px-2 py-0.5 rounded-full">클릭하여 상세</span>
+                            </h4>
+                            <div id="risk-management-cards" class="flex flex-col gap-4">
+                                <!-- Cards will be updated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Retirement Planning -->
+                        <div id="retirement-section" class="bg-white p-6 rounded-xl border border-stone-200 h-full flex flex-col">
+                             <!-- Content will be updated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 6: Action Checklist -->
+                <div id="view-checklist" class="hidden space-y-6">
+                    <div class="bg-stone-800 text-stone-200 rounded-xl p-8">
+                        <h2 class="text-xl font-bold text-white mb-6">✅ 고객 실천사항 체크리스트</h2>
+                        <p class="text-sm text-stone-400 mb-6">성공적인 재무 목표 달성을 위해 고객님께서 바로 실천해야 할 핵심 사항들입니다. 완료된 항목은 체크되어 있습니다.</p>
+                        <div id="action-checklist" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Content will be updated by JS -->
+                        </div>
+                    </div>
+                    <!-- Ending Quote -->
+                    <div class="text-center mt-8">
+                         <p class="text-lg font-bold text-blue-900">“보험은 종합재무설계의 목적이 아니라, 목적을 지키기 위한 수단입니다.”</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+        
+        <footer class="text-center text-xs text-stone-400 py-4">
+            * <span id="footer-note"></span> 2025년 기준 재무설계안입니다. 수익률은 가정치이며 변동될 수 있습니다.
+        </footer>
+
+    </main>
+
+    <script>
+        // State Management
+        let currentClient = 'client1';
+        let currentTab = 'profile'; 
+        let charts = {};
+
+        // Data Storage
+        const clientData = {
+            'client1': {
+                id: 'client1',
+                name: '이승현 고객님',
+                age: '40세',
+                maritalStatus: '미혼',
+                children: '1인 가구',
+                profileSummary: '40세 / 미혼 / 1인 가구',
+                strategy: '선택권 유지',
+                income: '500만 원',
+                savings: '250만 원 (50%)',
+                investmentStyle: '중간 수준 (연 4~5%)',
+                philosophy: `본 고객의 재무목표는 단기적인 수익 극대화가 아니라, <br><span class="font-bold text-blue-900">"인생의 주요 전환점(결혼·주거·노후)을 맞이했을 때 선택권을 유지하는 것"</span>입니다.`,
+                priorities: [
+                    '예기치 못한 상황에서도 생활이 흔들리지 않는 안정성 확보', 
+                    '결혼 이후 지출 구조 변화에 대응 가능한 현금흐름 유지', 
+                    '중기 내 주거 선택을 가능하게 하는 자기자본 형성', 
+                    '장기 노후자산의 조기 준비'
+                ],
+                
+                // Allocation (단위: 만 원) - Total 250
+                allocation: {
+                    labels: ['중기(주거/투자)', '장기(은퇴)', '유연자금'],
+                    data: [100, 75, 75],
+                    colors: ['#3b82f6', '#10b981', '#f59e0b'],
+                    totalSavings: '250만 원',
+                    intro: (total) => `월 소득 500만 원 중 <span class="font-bold text-blue-600">저축여력 ${total}</span>은 기간별 목적에 따라 엄격하게 분리 관리합니다.`,
+                    details: [
+                        { title: '🏠 중기: 주거/투자', amount: '100만 원', color: 'bg-blue-50', text: '자기자본 1억 만들기 (내 집 마련 시드)', class: 'text-blue-900' },
+                        { title: '🛡️ 장기: 은퇴/연금', amount: '75만 원', color: 'bg-emerald-50', text: '연금저축/IRP 활용 (강제 저축)', class: 'text-emerald-900' },
+                        { title: '🌊 유연 자금', amount: '75만 원', color: 'bg-amber-50', text: '결혼/단기 목적 대비 현금흐름 유지', class: 'text-amber-900' }
+                    ]
+                },
+                
+                // Short Term
+                shortTerm: {
+                    goal: '1,500만 원 (생활비 6개월)',
+                    current: 2000,
+                    progress: 133,
+                    statusText: '목표 충족!',
+                    detailText: '현재 유동자금 <span class="font-bold text-blue-600">2,000만 원</span> 보유.<br>원금 보존 중심 계좌(CMA 등)에서 유지하며, 결혼·차량 관련 일부 단기 지출은 이 범위 내에서 관리합니다.',
+                    action: '추가적인 단기 적금보다는 잉여 자금을 <span class="font-bold text-stone-800">중기·장기 자산</span>으로 배분하여 효율을 높입니다.'
+                },
+
+                // Mid Term
+                mid: {
+                    title: '주거 준비 자기자본 축적 (연 4% 가정)',
+                    labels: ['1년', '2년', '3년', '4년', '5년', '6년', '7년', '8년', '9년', '10년'],
+                    data: [1224, 2497, 3821, 5198, 6630, 8119, 9668, 11279, 12955, 14698], // 100만 원 적립
+                    intro: '내 집 마련을 "전액 현금 목표"로 하지 않고, 주거 선택을 가능하게 하는 <strong>자기자본 1억 원</strong> 형성을 목표로 합니다.',
+                    strategy: {
+                        goal: '약 1억 원 (7년 조기 달성 예상)',
+                        monthly: '100만 원',
+                        method: '안정성과 성장을 고려한 혼합형 자산 배분',
+                        philosophy: '중간에 계획을 포기하지 않는 것이 높은 수익률보다 중요',
+                        debt: '전세대출은 단기 상환 대상이 아니라 <strong>중기 관리 대상</strong>으로 설정하여 현금흐름 안정성을 우선합니다.'
+                    }
+                },
+                
+                // Long Term
+                risk: {
+                    intro: '장기 자금 영역에서 위험관리는 <strong>투자와 은퇴설계를 지키기 위한 전제 조건</strong>입니다.',
+                    cards: [
+                        { id: 'risk-medical', title: '실손의료보험', status: '필수 (방어)', statusColor: 'bg-emerald-100', text: '기본 의료비 리스크 차단', detail: '<strong>역할:</strong> 가장 빈번하고 예측 불가한 지출 방어.<br><strong>추천:</strong> 단독형, 갱신형', detailColor: 'bg-emerald-50' },
+                        { id: 'risk-major', title: '3대 질병 진단비', status: '필수 (소득)', statusColor: 'bg-emerald-100', text: '질병으로 인한 소득 공백 대응', detail: '<strong>보장:</strong> 암, 뇌혈관, 허혈성 심장질환<br><strong>구조:</strong> 비갱신형 / 순수보장형', detailColor: 'bg-emerald-50' },
+                        { id: 'risk-death', title: '종신/사망 보험', status: '제외', statusColor: 'bg-stone-300', text: '현재 생애주기 효율성 낮음', detail: '<strong>이유:</strong> 부양가족 부재로 고액 사망보장 불필요.<br><strong>대안:</strong> 보험료 재원을 장기 저축에 집중.', detailColor: 'bg-white', excluded: true }
+                    ],
+                    retirement: {
+                        amount: '월 75만 원 적립',
+                        message: '연금저축 및 IRP 활용.<br>중도 인출이 어려운 구조로 설계하여 장기 노후자산을 조기 준비합니다.'
+                    }
+                },
+
+                // Checklist
+                checklist: [
+                    { text: '비상자금 계좌 유지', detail: '원금 보존 중심 계좌(CMA)', checked: true },
+                    { text: '중기·장기 계좌 분리 운용', detail: '목적별 자금 혼용 방지', checked: false },
+                    { text: '결혼 시점 도래 시 재설계', detail: '지출 구조 변화 반영', checked: false },
+                    { text: '연 1회 재무 점검', detail: '자산 배분 및 목표 달성 현황 확인', checked: false }
+                ]
+            },
+
+            'client2': {
+                id: 'client2',
+                name: '김민정 고객님',
+                age: '35세',
+                maritalStatus: '기혼',
+                children: '자녀 1명 (2세)',
+                profileSummary: '35세 / 기혼 / 자녀 1명 / 맞벌이',
+                strategy: '가족 생활 안정성',
+                income: '800만 원',
+                savings: '200만 원 (25%)',
+                investmentStyle: '중저위험 (연 3~4%)',
+                philosophy: `본 고객의 재무목표는 <br><span class="font-bold text-red-700">"가족의 생활 안정성과 자녀 성장 과정의 연속성 확보"</span>입니다.`,
+                priorities: [
+                    '가족 단위 위험관리', 
+                    '자녀 교육자금 준비', 
+                    '주거 안정', 
+                    '부부 노후자산 형성'
+                ],
+                
+                // Allocation (단위: 만 원) - Total 200
+                allocation: {
+                    labels: ['중기(교육/주거)', '장기(은퇴)', '유연자금'],
+                    data: [80, 80, 40],
+                    colors: ['#3b82f6', '#10b981', '#f59e0b'],
+                    totalSavings: '200만 원',
+                    intro: (total) => `월 소득 800만 원 중 <span class="font-bold text-red-600">저축여력 ${total}</span>은 교육, 노후, 유연 자금으로 명확히 구분하여 운용합니다.`,
+                    details: [
+                        { title: '🎓 중기: 교육/주거', amount: '80만 원', color: 'bg-blue-50', text: '자녀 교육자금(40~50) 및 주거 안정 자금', class: 'text-blue-900' },
+                        { title: '🛡️ 장기: 은퇴', amount: '80만 원', color: 'bg-emerald-50', text: '연금저축 중심 (교육자금 종료 후 전환)', class: 'text-emerald-900' },
+                        { title: '🌊 유연 자금', amount: '40만 원', color: 'bg-amber-50', text: '예비 지출 대비', class: 'text-amber-900' }
+                    ]
+                },
+                
+                // Short Term
+                shortTerm: {
+                    goal: '2,000만 원',
+                    current: 2000,
+                    progress: 100,
+                    statusText: '이미 충족',
+                    detailText: '비상자금 2,000만 원 확보 완료.<br>차량·육아 단기 자금은 별도 관리하며, 원금 손실 가능 자산은 배제합니다.',
+                    action: '단기 자금의 안정성을 유지하며, 추가 여력은 <span class="font-bold text-stone-800">교육 및 노후 자금</span> 적립에 집중합니다.'
+                },
+
+                // Mid Term
+                mid: {
+                    title: '자녀 교육자금 마련 (연 3.5% 가정)',
+                    labels: ['2세', '4세', '6세', '8세', '10세', '12세', '14세', '16세', '18세', '20세'],
+                    data: [980, 2030, 3160, 4370, 5670, 7060, 8560, 10170, 11900, 13750], // ~400k saving accumulation
+                    intro: '대학 진학 시점까지 약 18년, <strong>목표 금액 1억 원</strong> 마련을 위해 전용 계좌를 분리합니다.',
+                    strategy: {
+                        goal: '1억 원 (18년 후)',
+                        monthly: '40~50만 원',
+                        method: '교육자금 전용 계좌 분리 (섞이지 않게 관리)',
+                        philosophy: '가족의 삶이 중단되지 않게 만드는 구조',
+                        debt: '전세대출은 안정적으로 유지하며, 주거 전환 시 자기자본 활용 구조를 마련합니다.'
+                    }
+                },
+                
+                // Long Term
+                risk: {
+                    intro: '이 고객의 위험관리는 <strong>가족 생계와 생활 유지를 위한 장치</strong>입니다.',
+                    cards: [
+                        { id: 'risk-medical', title: '실손의료보험', status: '필수', statusColor: 'bg-emerald-100', text: '의료비 기본 방어', detail: '<strong>체크:</strong> 부부 각각 가입 및 중복 보장 여부 점검.<br><strong>역할:</strong> 병원비 지출 방어.', detailColor: 'bg-emerald-50' },
+                        { id: 'risk-income', title: '정기보험', status: '핵심 (생계)', statusColor: 'bg-red-100', text: '가족 생계 보호 (주 소득자)', detail: '<strong>보장 기간:</strong> 자녀 독립 시점까지.<br><strong>장점:</strong> 종신 대비 보험료 효율 우수.', detailColor: 'bg-red-50' },
+                        { id: 'risk-major', title: '3대 질병 진단비', status: '필수 (소득)', statusColor: 'bg-emerald-100', text: '질병으로 인한 소득 공백 대비', detail: '<strong>구조:</strong> 비갱신형, 진단비 중심.<br><strong>추가:</strong> 필요 시 소득보장·후유장해 특약 검토.', detailColor: 'bg-emerald-50' }
+                    ],
+                    retirement: {
+                        amount: '월 80만 원 적립',
+                        message: '연금저축 중심 운용.<br>교육자금 적립 종료 후에는 해당 재원을 노후 자금으로 전환하여 가속화할 예정입니다.'
+                    }
+                },
+
+                // Checklist
+                checklist: [
+                    { text: '보험 중복 점검 및 유지', detail: '실손/정기/3대질병 구조 확립', checked: false },
+                    { text: '교육자금 계좌 분리 유지', detail: '중도 인출 방지', checked: true },
+                    { text: '연 1회 가족 재무 점검', detail: '가족 구성원 변화 반영', checked: false },
+                    { text: '소득 변화 시 즉시 재설계', detail: '승진/이직 등 현금흐름 변화 대응', checked: false }
+                ]
+            }
+        };
+
+        // Navigation Logic
+        const tabs = ['profile', 'overview', 'short', 'mid', 'long', 'checklist'];
+
+        function switchTab(tabId) {
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const content = document.getElementById(`view-${t}`);
+                
+                if (t === tabId) {
+                    btn.classList.remove('tab-inactive');
+                    btn.classList.add('tab-active');
+                    content.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('tab-inactive');
+                    content.classList.add('hidden');
+                }
+            });
+
+            currentTab = tabId;
+            updateContent(currentClient); 
+        }
+
+        function switchClient(clientId) {
+            if (!clientData[clientId]) return;
+
+            currentClient = clientId;
+            updateClientProfile(clientId); 
+            updateContent(clientId); 
+        }
+
+        function updateClientProfile(clientId) {
+            const data = clientData[clientId];
+            
+            document.getElementById('client-profile-summary').textContent = data.profileSummary;
+            document.getElementById('client-strategy').textContent = `전략: ${data.strategy}`;
+            document.getElementById('footer-note').textContent = `${data.name}님의`;
+
+            document.getElementById('client-name-title').textContent = data.name;
+            document.getElementById('client-age').textContent = data.age;
+            document.getElementById('client-marital-status').textContent = data.maritalStatus;
+            document.getElementById('client-children').textContent = data.children;
+
+            document.getElementById('philosophy-text').innerHTML = data.philosophy;
+            document.getElementById('client-income').textContent = data.income;
+            document.getElementById('client-savings').textContent = data.savings;
+            document.getElementById('client-style').textContent = data.investmentStyle;
+
+            const priorityList = document.getElementById('client-priority-list');
+            priorityList.innerHTML = data.priorities.map(item => `<li>${item}</li>`).join('');
+
+            const checklist = document.getElementById('action-checklist');
+            checklist.innerHTML = data.checklist.map(item => `
+                <div class="flex items-start space-x-3">
+                    <input type="checkbox" ${item.checked ? 'checked disabled' : ''} class="mt-1 w-5 h-5 text-blue-600 bg-stone-700 border-stone-600 rounded">
+                    <div>
+                        <strong class="text-white block">${item.text}</strong>
+                        <span class="text-sm text-stone-400">${item.detail}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateContent(clientId) {
+            const data = clientData[clientId];
+
+            if (charts.allocation) { charts.allocation.destroy(); charts.allocation = null; }
+            if (charts.mid) { charts.mid.destroy(); charts.mid = null; }
+
+            // Overview Tab
+            if (currentTab === 'overview') {
+                document.getElementById('allocation-intro-text').innerHTML = data.allocation.intro(data.allocation.totalSavings);
+                const detailsHtml = data.allocation.details.map(item => `
+                    <div class="p-4 ${item.color} rounded-lg border border-stone-100 hover:shadow-md transition cursor-default">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold ${item.class}">${item.title}</span>
+                            <span class="text-stone-700 font-bold">${item.amount}</span>
+                        </div>
+                        <p class="text-xs text-stone-600">${item.text}</p>
+                    </div>
+                `).join('');
+                document.getElementById('allocation-details').innerHTML = detailsHtml;
+                renderAllocationChart(data.allocation);
+            }
+
+            // Short Term Tab
+            if (currentTab === 'short') {
+                document.getElementById('short-header').innerHTML = `<h3 class="text-xl font-bold text-slate-800">단기: 생활 안정 및 지출 대응</h3><p class="text-slate-600 mt-1">예기치 못한 상황에서도 생활이 흔들리지 않도록 유동성을 확보하는 단계입니다.</p>`;
+                
+                const currentGoal = data.shortTerm.goal;
+                const statusColor = data.shortTerm.progress >= 100 ? 'bg-blue-500' : 'bg-amber-500';
+                
+                document.getElementById('emergency-status').innerHTML = `
+                    <span class="text-stone-500">목표: ${currentGoal}</span>
+                    <span class="${data.shortTerm.progress >= 100 ? 'text-blue-600' : 'text-amber-600'}">${data.shortTerm.statusText}</span>
+                `;
+                document.getElementById('emergency-progress-bar').innerHTML = `
+                    <div class="${statusColor} h-6 rounded-full flex items-center justify-center text-xs text-white font-bold" style="width: ${Math.min(data.shortTerm.progress, 100)}%">
+                        ${data.shortTerm.current.toLocaleString()}만 원 (${data.shortTerm.progress.toFixed(0)}%)
+                    </div>
+                `;
+                document.getElementById('emergency-detail').innerHTML = data.shortTerm.detailText;
+                document.getElementById('short-term-action').innerHTML = data.shortTerm.action;
+            }
+
+            // Mid Term Tab
+            if (currentTab === 'mid') {
+                document.getElementById('mid-header').innerHTML = `<h3 class="text-xl font-bold text-slate-800">중기: 목적 자금 및 안정성 확보</h3><p class="text-slate-600 mt-1">${data.mid.intro}</p>`;
+                document.getElementById('housing-chart-title').textContent = data.mid.title;
+
+                const strategyHtml = `
+                    <div class="bg-blue-50 p-5 rounded-lg border-l-4 border-blue-500">
+                        <h4 class="font-bold text-blue-900 mb-2 text-lg">💰 투자 설계</h4>
+                        <ul class="text-base text-blue-800 space-y-2">
+                            <li>• <strong>목표:</strong> ${data.mid.strategy.goal}</li>
+                            <li>• <strong>월 적립:</strong> ${data.mid.strategy.monthly}</li>
+                            <li>• <strong>방법:</strong> ${data.mid.strategy.method}</li>
+                            <li>• <strong>철학:</strong> ${data.mid.strategy.philosophy}</li>
+                        </ul>
+                    </div>
+                    <div class="bg-stone-100 p-5 rounded-lg border-l-4 border-stone-400">
+                        <h4 class="font-bold text-stone-800 mb-2 text-lg">📉 주거/부채 관리</h4>
+                        <p class="text-base text-stone-600">${data.mid.strategy.debt}</p>
+                    </div>
+                `;
+                document.getElementById('mid-strategy-details').innerHTML = strategyHtml;
+                renderMidChart(data.mid);
+            }
+
+            // Long Term Tab
+            if (currentTab === 'long') {
+                document.getElementById('long-header').innerHTML = `<h3 class="text-xl font-bold text-slate-800">장기: 위험 관리(Shield) & 은퇴 준비</h3><p class="text-slate-600 mt-1">${data.risk.intro}</p>`;
+                
+                const riskCardsHtml = data.risk.cards.map(card => `
+                    <div onclick="toggleRiskCard('${card.id}')" class="cursor-pointer p-4 rounded-lg shadow-sm border ${card.excluded ? 'bg-stone-100 border-stone-200 hover:border-red-400 opacity-75 hover:opacity-100' : 'bg-white border-stone-200 hover:border-emerald-500'} transition relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 ${card.statusColor} text-stone-800 text-xs font-bold px-2 py-1 rounded-bl-lg">${card.status}</div>
+                        <h5 class="font-bold text-stone-800 mb-2 ${card.excluded ? 'text-stone-500 line-through decoration-stone-400' : 'group-hover:text-emerald-600'}">${card.title}</h5>
+                        <p class="text-sm text-stone-500 line-clamp-2">${card.text}</p>
+                        <div id="${card.id}" class="hidden mt-3 pt-3 border-t border-stone-100 text-xs text-stone-600 ${card.detailColor} p-2 rounded">
+                            ${card.detail}
+                        </div>
+                    </div>
+                `).join('');
+                document.getElementById('risk-management-cards').innerHTML = riskCardsHtml;
+
+                document.getElementById('retirement-section').innerHTML = `
+                    <div class="mb-4">
+                        <h4 class="font-bold text-lg text-emerald-800 mb-4 flex items-center">
+                             ⏳ 은퇴 설계
+                        </h4>
+                        <ul class="text-sm text-stone-600 space-y-3">
+                            <li class="flex items-start"><span class="mr-2 text-emerald-500 font-bold">✔</span> ${data.risk.retirement.amount}</li>
+                            <li class="flex items-start"><span class="mr-2 text-emerald-500 font-bold">✔</span> 세액공제를 통한 복리 효과 극대화</li>
+                            <li class="flex items-start"><span class="mr-2 text-emerald-500 font-bold">✔</span> 중도 인출이 어려운 구조로 강제 저축</li>
+                        </ul>
+                    </div>
+                    <div class="mt-auto w-full bg-emerald-50 p-4 rounded-lg text-center border border-emerald-100">
+                        <p class="text-xs text-emerald-600 font-bold uppercase mb-1">장기 목표</p>
+                        <p class="text-sm text-stone-600 leading-relaxed">${data.risk.retirement.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function toggleRiskCard(id) {
+            const el = document.getElementById(id);
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+        }
+
+        function renderAllocationChart(allocationData) {
+            const ctx = document.getElementById('allocationChart').getContext('2d');
+            charts.allocation = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: allocationData.labels,
+                    datasets: [{
+                        data: allocationData.data,
+                        backgroundColor: allocationData.colors,
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { family: "'Noto Sans KR', sans-serif" } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) label += ': ';
+                                    label += context.raw + '만 원';
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '60%'
+                }
+            });
+        }
+
+        function renderMidChart(midData) {
+            const ctx = document.getElementById('midChart').getContext('2d');
+            
+            const isClient2 = currentClient === 'client2';
+            const barColor = isClient2 ? '#93c5fd' : '#93c5fd'; 
+            const lineColor = isClient2 ? '#1e40af' : '#1e40af';
+
+            charts.mid = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: midData.labels,
+                    datasets: [{
+                        label: '누적 자산 (단위: 만 원)',
+                        data: midData.data,
+                        backgroundColor: barColor,
+                        borderColor: lineColor,
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }, {
+                        type: 'line',
+                        label: '목표 추세선',
+                        data: midData.data,
+                        borderColor: lineColor,
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.raw.toLocaleString() + '만 원';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f3f4f6' },
+                            ticks: {
+                                callback: function(value) { return (value / 10000).toFixed(1).replace('.0', '') + '억'; }
+                            }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            switchClient('client1');
+            switchTab('profile'); 
+        });
+
+    </script>
+</body>
+</html>
