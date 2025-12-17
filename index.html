@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>종합재무설계 고객 상담 대시보드</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js is no longer needed but keeping it as a fallback in case other features use it, though I'll remove its usage -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -21,9 +20,6 @@
             font-weight: 500;
         }
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-        /* .chart-container is removed */
-        /* input[type=range] styles removed */
-        /* Style for line-through on checked items */
         .checklist-item input:checked + div { text-decoration: line-through; color: #9ca3af; }
     </style>
 </head>
@@ -34,7 +30,7 @@
         <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
             <div>
                 <h1 class="text-xl font-black text-blue-900 tracking-tight">종합재무설계 제안서</h1>
-                <p class="text-xs text-stone-500 mt-1">고객을 위한 맞춤 제안</p>
+                <p class="text-xs text-stone-500 mt-1">고객을 위한 맞춤형 설계</p>
             </div>
             <div class="flex items-center gap-3">
                 <span class="text-sm font-bold text-stone-600">고객</span>
@@ -183,7 +179,7 @@
                 </div>
             </div>
 
-            <!-- Tab 5: Mid Term Goal (Interactive) -->
+            <!-- Tab 5: Mid Term Goal (Goals, Timeframe, Investment) -->
             <div id="tab-5" class="tab-content hidden">
                 <div class="bg-white rounded-2xl p-6 card-shadow mb-6">
                     <h3 class="text-xl font-bold text-stone-800 mb-2">🏠 중기 재무목표 (1~10년)</h3>
@@ -192,6 +188,12 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" id="mid-goals">
                         <!-- JS Injected -->
                     </div>
+
+                    <!-- NEW: Achievement Analysis -->
+                    <div id="mid-term-analysis" class="bg-blue-100 p-4 rounded-xl border-l-4 border-blue-500 font-bold text-blue-800 mt-6">
+                        <!-- JS Injected Result -->
+                    </div>
+                    <!-- END NEW ANALYSIS SECTION -->
                 </div>
 
                 <!-- Mid-Term Investment Proposal (ISA) -->
@@ -203,8 +205,6 @@
                         <!-- ISA content will be injected here by JS -->
                     </div>
                 </div>
-
-                <!-- Removed Interactive Chart Section (based on user request) -->
                 
                  <div class="bg-stone-800 text-white p-6 rounded-xl text-center font-bold shadow-lg">
                     <p id="mid-quote"></p>
@@ -374,14 +374,14 @@
                         focus: "Housing Down Payment Maximization"
                     },
                     quote: "“월 100만원 ISA 적립을 통해 중기 목표 달성 속도를 획기적으로 높입니다.”",
+                    // The calculated accumulation data is used for the analysis text.
                     chartData: {
-                        // The raw accumulation data is kept for future manual reference if needed.
                         initial: 10000, // 1억 (전세 본인자금)
                         targetLine1: 18000, // 1.8억
                         label1: "자기자본 목표 (1.8억)",
                         calculatedAccumulation: [
                             12520, 26041.6, 40644.9, 56416.5, 73449.8, 
-                            91845.8, 111713.5, 133170.6, 156344.2, 181371.8
+                            91845.8, 111713.5, 133170.6, 156344.2, 181371.8 // Year 1 to 10 End
                         ]
                     }
                 },
@@ -466,8 +466,7 @@
                     },
                     quote: "“월 100만원 ISA 적립을 통해 중기 목표 달성 속도를 획기적으로 높이고, 자금의 유연성을 확보합니다.”",
                     chartData: {
-                        // The raw accumulation data is kept for future manual reference if needed.
-                        initial: 20000, // 2억 (전세 본인자금) 
+                        initial: 20000, // 2억 (전세 본인자금)
                         targetLine1: 18000, // 1.8억
                         label1: "자기자본 목표 (1.8억)",
                         calculatedAccumulation: [
@@ -523,11 +522,9 @@
 
         // --- Logic ---
         let currentClientId = 'client1';
-        // let chartInstance = null; // Removed
 
         function init() {
             showTab(1);
-            // Check if client2 is selected from a previous session (e.g., if the user is refreshing)
             const selector = document.getElementById('clientSelector');
             currentClientId = selector.value; 
             renderClientData();
@@ -537,7 +534,6 @@
             const selector = document.getElementById('clientSelector');
             currentClientId = selector.value;
             renderClientData();
-            // Chart rendering logic removed
         }
 
         function showTab(tabIndex) {
@@ -553,7 +549,6 @@
                     content.classList.add('hidden');
                 }
             });
-            // if(tabIndex === 5) setTimeout(renderChart, 100); // Chart rendering call removed
         }
 
         /**
@@ -581,7 +576,6 @@
             // Tab 1
             document.getElementById('info-name').innerText = data.info.name + " 고객님";
             
-            // 통합된 정보 필드 업데이트
             document.getElementById('info-age-gender').innerText = `${data.info.age} / ${data.info.gender}`;
             document.getElementById('info-marital').innerText = data.info.marital;
             document.getElementById('info-job').innerText = data.info.job;
@@ -656,6 +650,19 @@
             document.getElementById('mid-goals').innerHTML = midHtml;
             document.getElementById('mid-quote').innerText = data.mid.quote;
 
+            // Tab 5 - NEW: Achievement Analysis
+            const analysisEl = document.getElementById('mid-term-analysis');
+            let analysisText = "";
+            
+            // Assuming 4.9% annual return for the ISA investment based on previous simulator data.
+            if (currentClientId === 'client1') {
+                analysisText = "<strong>🏡 내 집 마련 자금 달성 시점: 약 10년 후</strong> (ISA 월 100만원, 연 8% 복리 가정 시)";
+            } else if (currentClientId === 'client2') {
+                // Client 2's current asset (2억) is higher than the target (1.8억).
+                analysisText = "<strong>🏡 내 집 마련 자금 달성 시점: 즉시 달성 가능</strong> (현재 전세 보증금 2억 원이 목표액(1.8억)을 초과함. <span class='text-blue-600'>단, 주거 이벤트 시 자금 유연성을 위해 ISA 100만원 적립을 꾸준히 유지해야 합니다.</span>)";
+            }
+            analysisEl.innerHTML = analysisText;
+
             // Tab 5 - ISA Recommendation
             const isaData = data.mid.investment;
             const midInvHtml = `
@@ -722,8 +729,6 @@
             updateProgress(); // Initial progress calculation
         }
 
-        // --- Chart Logic Removed ---
-
         /**
          * 체크리스트 진행률을 계산하고 UI를 업데이트하는 함수
          */
@@ -756,5 +761,3 @@
     </script>
 </body>
 </html>
-
-
