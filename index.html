@@ -439,7 +439,26 @@
                     expenseDetail: "소비성 400만 + 비소비성 200만",
                     savings: "200만 원",
                     quote: "“총 200만원의 저축액을 ISA(부부 각 50만)+연금(부부 각 50만)으로 분배합니다. 단기/버퍼 자금 확보를 위해 지출 절감이 필수입니다.”",
-                    feedback: "🔎 <strong>지출 점검:</strong> 외식·배달, 구독 서비스 등에서 50~100만설)",
+                    feedback: "🔎 <strong>지출 점검:</strong> 외식·배달, 구독 서비스 등에서 50~100만 원 절감 시 중기·교육자금에 추가 투입 가능합니다."
+                },
+                short: {
+                    badge: "매우 높음",
+                    badgeColor: "bg-blue-100 text-blue-700",
+                    goals: [
+                        { name: "차량(중고)", val: "1,000만 원" },
+                        { name: "육아 자금", val: "1,000만 원" },
+                        { name: "총 필요 자금", val: "2,000만 원" } // Target item for highlighting
+                    ],
+                    analysis: "기존 유동성 자금(5,000만) 중 2,000만원을 확보하여 단기 목표를 달성합니다. 월 저축액 200만원은 ISA와 연금으로 전액 배분되어, 지출 절감을 통한 비상금 추가 확보가 중요합니다.",
+                    principles: ["📉 투자 금지", "🛡️ CMA 원금 안정 자산", "🔄 남는 자금 중기 이관"]
+                },
+                mid: {
+                    goals: [
+                        { title: "내 집 마련", target: "자기자본 1억 8천", desc: "목표 주택 6억<br>ISA 100만 원 적립으로 비과세 이점 활용" },
+                        { title: "자녀 교육", target: "1억 원 (원금 보장)", desc: "수익보다 확정성 우선<br>월 100만원 중기 자금 내에서 준비" }
+                    ],
+                    investment: {
+                        name: "ISA (부부 공동 투자 계좌)",
                         amount: "100만 원", // 월 50만원 x 2명
                         purpose: "주거/교육 목표 달성을 위한 부부 공동 비과세 성장 자금",
                         desc: "부부 각각 50만원씩 ISA 계좌를 개설하여 월 100만원 한도를 적극 활용하며, 가족의 중기 목표(주거, 교육)를 위한 자금의 규모를 빠르게 키우고 비과세 혜택을 극대화합니다.",
@@ -637,7 +656,7 @@
             
             // Assuming 4.9% annual return for the ISA investment based on previous simulator data.
             if (currentClientId === 'client1') {
-                analysisText = "<strong>🏡 내 집 마련 자금 달성 시점: 약 10년 후</strong> (ISA 월 100만원, 연 8% 복리 가정 시)";
+                analysisText = "<strong>🏡 내 집 마련 자금 달성 시점: 약 10년 후</strong> (ISA 월 100만원, 연 4.9% 복리 가정 시)";
             } else if (currentClientId === 'client2') {
                 // Client 2's current asset (2억) is higher than the target (1.8억).
                 analysisText = "<strong>🏡 내 집 마련 자금 달성 시점: 즉시 달성 가능</strong> (현재 전세 보증금 2억 원이 목표액(1.8억)을 초과함. <span class='text-blue-600'>단, 주거 이벤트 시 자금 유연성을 위해 ISA 100만원 적립을 꾸준히 유지해야 합니다.</span>)";
@@ -742,4 +761,3 @@
     </script>
 </body>
 </html>
-
