@@ -458,7 +458,7 @@
                         { title: "자녀 교육", target: "1억 원 (원금 보장)", desc: "수익보다 확정성 우선<br>월 100만원 중기 자금 내에서 준비" }
                     ],
                     investment: {
-                        name: "ISA (부부 공동 투자 계좌)",
+                        name: "ISA (부부 각자 계좌 개설)",
                         amount: "100만 원", // 월 50만원 x 2명
                         purpose: "주거/교육 목표 달성을 위한 부부 공동 비과세 성장 자금",
                         desc: "부부 각각 50만원씩 ISA 계좌를 개설하여 월 100만원 한도를 적극 활용하며, 가족의 중기 목표(주거, 교육)를 위한 자금의 규모를 빠르게 키우고 비과세 혜택을 극대화합니다.",
@@ -656,7 +656,7 @@
             
             // Assuming 4.9% annual return for the ISA investment based on previous simulator data.
             if (currentClientId === 'client1') {
-                analysisText = "<strong>🏡 내 집 마련 자금 달성 시점: 약 10년 후</strong> (ISA 월 100만원, 연 4.9% 복리 가정 시)";
+                analysisText = "<strong>🏡 내 집 마련 자금 달성 시점: 약 10년 후</strong> (ISA 월 100만원, 연 8% 복리 가정 시)";
             } else if (currentClientId === 'client2') {
                 // Client 2's current asset (2억) is higher than the target (1.8억).
                 analysisText = "<strong>🏡 내 집 마련 자금 달성 시점: 즉시 달성 가능</strong> (현재 전세 보증금 2억 원이 목표액(1.8억)을 초과함. <span class='text-blue-600'>단, 주거 이벤트 시 자금 유연성을 위해 ISA 100만원 적립을 꾸준히 유지해야 합니다.</span>)";
@@ -761,3 +761,4 @@
     </script>
 </body>
 </html>
+
